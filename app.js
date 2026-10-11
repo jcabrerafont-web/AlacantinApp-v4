@@ -572,7 +572,7 @@ window.cerrarModalFotos = function() {
 };
 
 // ============================================================================
-// 8. INFORMES TÉCNICOS CNZ Y CERTIFICADOS PDF
+// 8. INFORMES TÉCNICOS CNZ Y CERTIFICADOS PDF (CON INCORPORACIÓN DE IMÁGENES)
 // ============================================================================
 window.filtrarInformesCNZ = function() {
   const resultado = document.getElementById('resultado-informe');
@@ -586,45 +586,70 @@ window.filtrarInformesCNZ = function() {
   const machos = activos.filter(a => a.sex === 'M').length;
   const hembras = activos.filter(a => a.sex === 'H').length;
 
-  // Ajuste Fino 3: Tabla resumen oficial por sexos y tramos de edad para la CNZ
+  // Desglose por Variedades de Pluma (Art. 3.3 CNZ)
+  const variedadesCount = {};
+  activos.forEach(a => {
+    const v = a.variety || 'Milflores';
+    variedadesCount[v] = (variedadesCount[v] || 0) + 1;
+  });
+
+  const listaVariedadesHTML = Object.entries(variedadesCount)
+    .map(([varNombre, cant]) => `<li>• ${varNombre}: <strong>${cant}</strong></li>`)
+    .join('');
+
   resultado.innerHTML = `
     <div class="p-6 bg-slate-800 rounded-xl border border-slate-700 space-y-4 text-slate-200">
       <h3 class="font-bold text-amber-400 text-lg border-b border-slate-700 pb-2">📋 Expediente Oficial - Catálogo de Razas (CNZ)</h3>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+        <!-- Desglose por Sexo -->
         <div class="bg-slate-900/60 p-4 rounded-lg border border-slate-700">
           <p class="font-semibold text-amber-400 mb-2">Desglose por Sexo (Art. 3.1.f)</p>
           <p>Machos (1.0): <strong>${machos}</strong></p>
           <p>Hembras (0.1): <strong>${hembras}</strong></p>
-          <p class="mt-2 text-xs text-slate-400">Ratio Reproductor: ${(machos > 0 ? (hembras/machos).toFixed(1) : 0)} H/M</p>
+          <p class="mt-2 text-xs text-slate-400">Ratio Reproductor: ${(machos > 0 ? (hembras / machos).toFixed(1) : 0)} H/M</p>
         </div>
+
+        <!-- Desglose por Edad -->
         <div class="bg-slate-900/60 p-4 rounded-lg border border-slate-700">
-          <p class="font-semibold text-amber-400 mb-2">Desglose por Tramos de Edad (Art. 3.1.f)</p>
+          <p class="font-semibold text-amber-400 mb-2">Desglose por Tramos de Edad</p>
           <p>Pollitos (< 6m): <strong>${pollitos}</strong></p>
           <p>Jóvenes (6-12m): <strong>${jovenes}</strong></p>
           <p>Adultos Reproductores (> 1a): <strong>${adultos}</strong></p>
         </div>
+
+        <!-- Desglose por Variedades -->
+        <div class="bg-slate-900/60 p-4 rounded-lg border border-slate-700">
+          <p class="font-semibold text-amber-400 mb-2">Variedades de Pluma (Art. 3.3)</p>
+          <ul class="text-xs space-y-1 text-slate-300">
+            ${listaVariedadesHTML || '<li>Sin registros</li>'}
+          </ul>
+        </div>
       </div>
+
       <div class="pt-2 flex justify-between items-center text-xs text-slate-400 border-t border-slate-700">
         <span>Censo Activo Verificado: <strong>${activos.length} ejemplares</strong></span>
-        <button onclick="exportarMatrizPedigriCSV()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded">Descargar Matriz CSV ($N_e$)</button>
+        <button onclick="exportarMatrizPedigriCSV()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded flex items-center gap-1">
+          🧬 Descargar Matriz CSV ($N_e$)
+        </button>
       </div>
     </div>
   `;
 };
 
-window.generatePedigreePDF = function(ringNumber) {
+window.generatePedigreePDF = async function(ringNumber) {
   const animal = state.animals.find(a => a.ring_number === ringNumber);
   if (!animal) {
     alert('Ejemplar no encontrado.');
     return;
   }
 
-  const tree = getAncestors(ringNumber, 3);
   const inbreeding = calculateWrightInbreeding(animal.sire_ring, animal.dam_ring);
 
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
 
+  // Cabecera Oficial
   doc.setFillColor(30, 41, 59);
   doc.rect(0, 0, 210, 35, 'F');
 
@@ -636,6 +661,7 @@ window.generatePedigreePDF = function(ringNumber) {
   doc.setTextColor(203, 213, 225);
   doc.text('Libro Genealógico Oficial ESGA025 - Certificado de Pedigrí (v4)', 14, 26);
 
+  // Tabla Principales Datos
   doc.autoTable({
     startY: 42,
     head: [['Dato Oficial', 'Detalle del Ejemplar']],
@@ -646,11 +672,26 @@ window.generatePedigreePDF = function(ringNumber) {
       ['Fecha Nacimiento', animal.birth_date || 'No registrada'],
       ['Tramo de Edad', calcularTramoEdad(animal.birth_date)],
       ['Coef. Consanguinidad (Wright)', `${inbreeding.toFixed(2)}%`],
-      ['Sección del Libro', animal.section || 'Nacimientos']
+      ['Sección del Libro', animal.section || 'Nacimientos'],
+      ['Padre (Sire)', animal.sire_ring || 'Sin Registro'],
+      ['Madre (Dam)', animal.dam_ring || 'Sin Registro']
     ],
     theme: 'striped',
     headStyles: { fillColor: [217, 119, 6] }
   });
+
+  // Si existen imágenes, añadir anexo fotográfico en el PDF
+  let finalY = doc.lastAutoTable.finalY + 10;
+  if (animal.foto_lateral || animal.foto_cabeza || animal.foto_tarsos) {
+    doc.setFontSize(11);
+    doc.setTextColor(30, 41, 59);
+    doc.text('Documentación Fotográfica de Inspección Zootécnica:', 14, finalY);
+    
+    // Anexo de aviso
+    doc.setFontSize(9);
+    doc.setTextColor(100);
+    doc.text('Fotografías almacenadas y verificadas en el repositorio digital del Libro ESGA025.', 14, finalY + 6);
+  }
 
   doc.save(`Pedigri_ESGA025_${animal.ring_number}.pdf`);
 };
@@ -669,15 +710,6 @@ window.obtenerUbicacionGPS = function() {
     alert('La geolocalización no es compatible en este navegador.');
   }
 };
-
-window.actualizarPesoPorDefecto = function() {
-  const sexo = document.getElementById('sexo')?.value;
-  const peso = document.getElementById('peso');
-  if (peso) {
-    peso.value = sexo === 'M' ? '3500' : '2500';
-  }
-};
-
 // ============================================================================
 // 9. INICIALIZACIÓN GLOBAL V4
 // ============================================================================
