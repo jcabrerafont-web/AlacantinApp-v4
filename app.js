@@ -286,6 +286,96 @@ async function guardarEjemplar(event) {
     return;
   }
 
+  // 1. Sincronización de datos del Criador / REGA
+  if (navigator.onLine && supabaseClient && criadorRega) {
+    const breederData = {
+      code: criadorSocio || 'ESGA025',
+      full_name: criadorNombre,
+      rega: criadorRega,
+      location: `${criadorMunicipio} (${criadorProvincia})`,
+      gps: criadorGps
+    };
+    await supabaseClient.from('breeders').upsert([breederData]);
+  }
+
+  // 2. Procesamiento de Fotografías (Subida a Supabase si Online / Guardado Base64 si Offline)
+  let fotoLateralUrl = null;
+  let fotoCabezaUrl = null;
+  let fotoTarsosUrl = null;
+
+  if (navigator.onLine && supabaseClient) {
+    // Modo ONLINE: Subida directa a Supabase Storage
+    fotoLateralUrl = await subirImagenStorage('foto_lateral', ring);
+    fotoCabezaUrl = await subirImagenStorage('foto_cabeza', ring);
+    fotoTarsosUrl = await subirImagenStorage('foto_tarsos', ring);
+  } else {
+    // Modo OFFLINE (Gallinero sin cobertura): Convertir a Base64 para visualización e inspección local
+    const convertirABase64 = (file) => new Promise((resolve) => {
+      if (!file) return resolve(null);
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target.result);
+      reader.readAsDataURL(file);
+    });
+
+    fotoLateralUrl = await convertirABase64(fotosSeleccionadas.foto_lateral);
+    fotoCabezaUrl = await convertirABase64(fotosSeleccionadas.foto_cabeza);
+    fotoTarsosUrl = await convertirABase64(fotosSeleccionadas.foto_tarsos);
+  }
+
+  // 3. Estructura de datos del nuevo ejemplar
+  const newAnimal = {
+    ring_number: ring,
+    variety: variety || 'Milflores',
+    sex: sex || 'M',
+    birth_date: birthDate || null,
+    weight: weight || null,
+    section: section || 'Registro Nacimientos',
+    sire_ring: sire || null,
+    dam_ring: dam || null,
+    germoplasm: germoplasm || 'No',
+    notes: notes || '',
+    breeder_code: criadorSocio || null,
+    foto_lateral: fotoLateralUrl,
+    foto_cabeza: fotoCabezaUrl,
+    foto_tarsos: fotoTarsosUrl,
+    status: 'active'
+  };
+
+  // 4. Guardado en Supabase o Encolado Local
+  if (navigator.onLine && supabaseClient) {
+    const { error } = await supabaseClient.from('animals').upsert([newAnimal]);
+    if (error) {
+      alert('Error al guardar en Supabase: ' + error.message);
+      return;
+    }
+  } else {
+    // Guardar en cola de sincronización pendiente offline
+    const colaOffline = JSON.parse(localStorage.getItem('alacantin_cola_offline') || '[]');
+    colaOffline.push({ animalData: newAnimal, timestamp: Date.now() });
+    localStorage.setItem('alacantin_cola_offline', JSON.stringify(colaOffline));
+  }
+
+  // 5. Actualizar estado local (Reactividad e Interfaz)
+  const index = state.animals.findIndex(a => a.ring_number === ring);
+  if (index >= 0) {
+    state.animals[index] = newAnimal;
+  } else {
+    state.animals.unshift(newAnimal);
+  }
+
+  localStorage.setItem('alacantin_animals', JSON.stringify(state.animals));
+
+  // 6. Mensaje final según cobertura
+  if (navigator.onLine) {
+    alert('✅ Ejemplar y documentación fotográfica sincronizados correctamente en Supabase.');
+  } else {
+    alert('📡 Guardado localmente en modo Offline. Las fotografías se subirán a la nube automáticamente cuando recuperes la cobertura.');
+  }
+
+  limpiarFormulario();
+  renderAll();
+}
+
   // Sincronización en la tabla de breeders / Explotación REGA
   if (navigator.onLine && supabaseClient && criadorRega) {
     const breederData = {
