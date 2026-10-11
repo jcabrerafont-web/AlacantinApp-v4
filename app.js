@@ -387,7 +387,7 @@ async function guardarEjemplar(event) {
   renderAll();
 }
 
-  // Sincronización en la tabla de breeders / Explotación REGA
+ // Sincronización en la tabla de breeders / Explotación REGA
   if (navigator.onLine && supabaseClient && criadorRega) {
     const breederData = {
       code: criadorSocio || 'ESGA025',
@@ -396,9 +396,17 @@ async function guardarEjemplar(event) {
       location: `${criadorMunicipio} (${criadorProvincia})`,
       gps: criadorGps
     };
-    await supabaseClient.from('breeders').upsert([breederData]);
-  }
 
+    (async () => {
+      try {
+        const { data, error } = await supabaseClient.from('breeders').upsert([breederData]);
+        if (error) throw error;
+        console.log('Datos del criador sincronizados en breeders:', data);
+      } catch (err) {
+        console.error('Error al sincronizar datos del criador:', err.message);
+      }
+    })();
+  }
   // Subida de las 3 fotografías obligatorias procesando la cámara/galería
   let fotoLateralUrl = null;
   let fotoCabezaUrl = null;
