@@ -194,7 +194,7 @@ async function loadAllData() {
 }
 
 // ============================================================================
-// 4. REGISTRO Y GUARDADO DE DATOS (CRUD + SUPABASE STORAGE + REGA)
+// 4. REGISTRO Y GUARDADO DE DATOS (AJUSTES FINOS: SUBIDA FOTOS + REGA UPSERT)
 // ============================================================================
 async function subirImagenStorage(fileInputId, ringNumber, tipo) {
   const fileInput = document.getElementById(fileInputId);
@@ -243,6 +243,7 @@ async function guardarEjemplar(event) {
     return;
   }
 
+  // Ajuste Fino 2: Upsert paralelo en la tabla de breeders/explotación REGA
   if (navigator.onLine && supabaseClient && criadorRega) {
     const breederData = {
       code: criadorSocio || 'ESGA025',
@@ -254,6 +255,7 @@ async function guardarEjemplar(event) {
     await supabaseClient.from('breeders').upsert([breederData]);
   }
 
+  // Ajuste Fino 1: Subida de fotos obligatorias CNZ
   let fotoLateralUrl = null;
   let fotoCabezaUrl = null;
   let fotoTarsosUrl = null;
@@ -392,7 +394,39 @@ function calculateWrightInbreeding(sireRing, damRing) {
 }
 
 // ============================================================================
-// 6. RENDERIZADO DE TABLAS, VISTAS E INFORMES CNZ
+// 6. EXPORTACIÓN DE MATRIZ DE PEDIGRÍ CSV (PARA ESTUDIO GENÉTICO Y Ne)
+// ============================================================================
+window.exportarMatrizPedigriCSV = function() {
+  if (!state.animals || state.animals.length === 0) {
+    alert('No hay registros de animales en el censo para exportar.');
+    return;
+  }
+
+  let csvContent = 'data:text/csv;charset=utf-8,ID_ANIMAL,ID_PADRE,ID_MADRE,SEXO,FECHA_NACIMIENTO,SECCION_LIBRO,REGA_EXPLOTACION\n';
+
+  state.animals.forEach(a => {
+    const idAnimal = a.ring_number || '';
+    const idPadre = a.sire_ring || '';
+    const idMadre = a.dam_ring || '';
+    const sexo = a.sex || '';
+    const fechaNac = a.birth_date || '';
+    const seccion = a.section || 'Nacimientos';
+    const rega = a.breeder_code || 'ESGA025';
+
+    csvContent += `"${idAnimal}","${idPadre}","${idMadre}","${sexo}","${fechaNac}","${seccion}","${rega}"\n`;
+  });
+
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement('a');
+  link.setAttribute('href', encodedUri);
+  link.setAttribute('download', `Matriz_Pedigri_ESGA025_${new Date().toISOString().split('T')[0]}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
+// ============================================================================
+// 7. RENDERIZADO DE TABLAS, VISTAS E INFORMES CNZ
 // ============================================================================
 function renderAll() {
   renderAnimalsTable();
@@ -439,7 +473,7 @@ function populateDropdowns() {
 }
 
 // ============================================================================
-// 7. INFORMES TÉCNICOS CNZ Y CERTIFICADOS PDF
+// 8. INFORMES TÉCNICOS CNZ Y CERTIFICADOS PDF
 // ============================================================================
 window.filtrarInformesCNZ = function() {
   const resultado = document.getElementById('resultado-informe');
@@ -453,6 +487,7 @@ window.filtrarInformesCNZ = function() {
   const machos = activos.filter(a => a.sex === 'M').length;
   const hembras = activos.filter(a => a.sex === 'H').length;
 
+  // Ajuste Fino 3: Tabla resumen oficial por sexos y tramos de edad para la CNZ
   resultado.innerHTML = `
     <div class="p-6 bg-slate-800 rounded-xl border border-slate-700 space-y-4 text-slate-200">
       <h3 class="font-bold text-amber-400 text-lg border-b border-slate-700 pb-2">📋 Expediente Oficial - Catálogo de Razas (CNZ)</h3>
@@ -464,13 +499,16 @@ window.filtrarInformesCNZ = function() {
           <p class="mt-2 text-xs text-slate-400">Ratio Reproductor: ${(machos > 0 ? (hembras/machos).toFixed(1) : 0)} H/M</p>
         </div>
         <div class="bg-slate-900/60 p-4 rounded-lg border border-slate-700">
-          <p class="font-semibold text-amber-400 mb-2">Desglose por Tramos de Edad</p>
+          <p class="font-semibold text-amber-400 mb-2">Desglose por Tramos de Edad (Art. 3.1.f)</p>
           <p>Pollitos (< 6m): <strong>${pollitos}</strong></p>
           <p>Jóvenes (6-12m): <strong>${jovenes}</strong></p>
           <p>Adultos Reproductores (> 1a): <strong>${adultos}</strong></p>
         </div>
       </div>
-      <p class="text-xs text-slate-400 text-right pt-2">Total Censo Activo Verificado: <strong>${activos.length} ejemplares</strong></p>
+      <div class="pt-2 flex justify-between items-center text-xs text-slate-400 border-t border-slate-700">
+        <span>Censo Activo Verificado: <strong>${activos.length} ejemplares</strong></span>
+        <button onclick="exportarMatrizPedigriCSV()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded">Descargar Matriz CSV ($N_e$)</button>
+      </div>
     </div>
   `;
 };
@@ -542,7 +580,7 @@ window.actualizarPesoPorDefecto = function() {
 };
 
 // ============================================================================
-// 8. INICIALIZACIÓN GLOBAL V4
+// 9. INICIALIZACIÓN GLOBAL V4
 // ============================================================================
 document.addEventListener('DOMContentLoaded', () => {
   console.log('AlacantinApp v4 - Inicializada con éxito bajo protocolo CNZ.');
