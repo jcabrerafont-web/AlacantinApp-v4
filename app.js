@@ -413,11 +413,16 @@ async function guardarEjemplar(event) {
   let fotoTarsosUrl = null;
 
   if (navigator.onLine && supabaseClient) {
-    fotoLateralUrl = await subirImagenStorage('foto_lateral', ring);
-    fotoCabezaUrl = await subirImagenStorage('foto_cabeza', ring);
-    fotoTarsosUrl = await subirImagenStorage('foto_tarsos', ring);
+    (async () => {
+      try {
+        fotoLateralUrl = await subirImagenStorage('foto_lateral', ring);
+        fotoCabezaUrl = await subirImagenStorage('foto_cabeza', ring);
+        fotoTarsosUrl = await subirImagenStorage('foto_tarsos', ring);
+      } catch (err) {
+        console.error('Error al subir las fotografías:', err.message);
+      }
+    })();
   }
-
   const newAnimal = {
     ring_number: ring,
     variety: variety || 'Milflores',
