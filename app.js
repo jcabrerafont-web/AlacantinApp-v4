@@ -6,11 +6,22 @@
 // --- CONFIGURACIÓN SUPABASE ---
 const SUPABASE_URL = 'https://htbyipavphxcehdwrjbl.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0YnlpcGF2cGh4Y2VoZHdyamJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEwMjQyOTEsImV4cCI6MjEwNjYwMDI5MX0.tnBJERxhI3YbwSOFVkeBvvz5qm6FNxzBZ8_5S-UKoQM';
+
 let supabaseClient = null;
 
-if (typeof window !== 'undefined' && window.supabase) {
-  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Inicialización segura del cliente Supabase
+function initSupabase() {
+  if (window.supabase && typeof window.supabase.createClient === 'function') {
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  } else if (typeof createClient === 'function') {
+    supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  } else {
+    console.error('Error: La librería de Supabase no se ha cargado correctamente en el CDN.');
+  }
 }
+
+// Ejecutar inicialización inmediatamente
+initSupabase();
 
 // --- ESTADO GLOBAL DE LA APLICACIÓN ---
 let state = {
