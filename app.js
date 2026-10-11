@@ -407,22 +407,21 @@ async function guardarEjemplar(event) {
       }
     })();
   }
-  // Subida de las 3 fotografías obligatorias procesando la cámara/galería
+ // Subida de las 3 fotografías obligatorias procesando la cámara/galería
   let fotoLateralUrl = null;
   let fotoCabezaUrl = null;
   let fotoTarsosUrl = null;
 
   if (navigator.onLine && supabaseClient) {
-    (async () => {
-      try {
-        fotoLateralUrl = await subirImagenStorage('foto_lateral', ring);
-        fotoCabezaUrl = await subirImagenStorage('foto_cabeza', ring);
-        fotoTarsosUrl = await subirImagenStorage('foto_tarsos', ring);
-      } catch (err) {
-        console.error('Error al subir las fotografías:', err.message);
-      }
-    })();
+    try {
+      fotoLateralUrl = await subirImagenStorage('foto_lateral', ring);
+      fotoCabezaUrl = await subirImagenStorage('foto_cabeza', ring);
+      fotoTarsosUrl = await subirImagenStorage('foto_tarsos', ring);
+    } catch (err) {
+      console.error('Error al subir las fotografías:', err.message);
+    }
   }
+
   const newAnimal = {
     ring_number: ring,
     variety: variety || 'Milflores',
