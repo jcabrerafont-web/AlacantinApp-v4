@@ -1,0 +1,24 @@
+/* Estilos personalizados y de impresión para AlacantinApp */
+.touch-target { 
+  min-height: 48px; 
+  min-width: 48px; 
+}
+
+@media print {
+  .no-print { 
+    display: none !important; 
+  }
+  .print-only { 
+    display: block !important; 
+  }
+  body { 
+    background: white !important; 
+    color: black !important; 
+  }
+  .print-card { 
+    border: 1px solid #ccc !important; 
+    padding: 1rem !important; 
+    margin-bottom: 1rem !important; 
+    page-break-inside: avoid; 
+  }
+}
