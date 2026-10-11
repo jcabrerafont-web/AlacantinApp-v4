@@ -264,7 +264,7 @@
   </div>
 </div>
 
-      <!-- SECCIÓN 2: TABLA DE CENSO GENEALÓGICO -->
+    <!-- SECCIÓN 2: TABLA DE CENSO GENEALÓGICO -->
       <section id="sec-censo" class="hidden space-y-4">
         <div class="flex justify-between items-center flex-wrap gap-4">
           <h2 class="text-xl font-bold text-slate-100">Censo del Libro Genealógico ESGA025</h2>
@@ -287,7 +287,8 @@
                 <th class="p-4">Variedad</th>
                 <th class="p-4">Tramo Edad</th>
                 <th class="p-4">Sección Libro</th>
-                <th class="p-4">Criador / REGA</th>
+                <th class="p-4">Fotos CNZ</th>
+                <th class="p-4">Acciones</th>
               </tr>
             </thead>
             <tbody id="tabla-ejemplares" class="divide-y divide-slate-700">
@@ -295,7 +296,48 @@
             </tbody>
           </table>
         </div>
-      </section>
+
+        <!-- MODAL VISOR GALERÍA DE FOTOS (CNZ ART. 3.1.c) -->
+        <div id="modal-fotos" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+          <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-4xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+            <!-- CABECERA MODAL -->
+            <div class="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-900">
+              <div>
+                <h3 id="modal-fotos-titulo" class="text-base font-bold text-amber-400">Documentación Fotográfica</h3>
+                <p id="modal-fotos-subtitulo" class="text-xs text-slate-400">Inspección Zootécnica - Libro Genealógico ESGA025</p>
+              </div>
+              <button onclick="cerrarModalFotos()" class="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 hover:bg-slate-700 text-slate-300 flex items-center justify-center font-bold">✕</button>
+            </div>
+            <!-- CUERPO MODAL (GALERÍA DE 3 FOTOS) -->
+            <div class="p-6 overflow-y-auto space-y-6">
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Foto 1: Lateral -->
+                <div class="bg-slate-900/80 rounded-xl p-3 border border-slate-700 flex flex-col space-y-2">
+                  <span class="text-xs font-semibold text-amber-400">1. Vista Lateral Completa</span>
+                  <div class="h-52 bg-slate-950 rounded-lg overflow-hidden border border-slate-800 flex items-center justify-center">
+                    <img id="modal-foto-lateral" src="" alt="Sin foto lateral" class="w-full h-full object-cover hidden">
+                    <span id="modal-foto-lateral-empty" class="text-xs text-slate-500 italic">No registrada</span>
+                  </div>
+                </div>
+                <!-- Foto 2: Cabeza -->
+                <div class="bg-slate-900/80 rounded-xl p-3 border border-slate-700 flex flex-col space-y-2">
+                  <span class="text-xs font-semibold text-amber-400">2. Cabeza / Cresta / Orejilla</span>
+                  <div class="h-52 bg-slate-950 rounded-lg overflow-hidden border border-slate-800 flex items-center justify-center">
+                    <img id="modal-foto-cabeza" src="" alt="Sin foto cabeza" class="w-full h-full object-cover hidden">
+                    <span id="modal-foto-cabeza-empty" class="text-xs text-slate-500 italic">No registrada</span>
+                  </div>
+                </div>
+                <!-- Foto 3: Tarsos -->
+                <div class="bg-slate-900/80 rounded-xl p-3 border border-slate-700 flex flex-col space-y-2">
+                  <span class="text-xs font-semibold text-amber-400">3. Patas / Tarsos</span>
+                  <div class="h-52 bg-slate-950 rounded-lg overflow-hidden border border-slate-800 flex items-center justify-center">
+                    <img id="modal-foto-tarsos" src="" alt="Sin foto tarsos" class="w-full h-full object-cover hidden">
+                    <span id="modal-foto-tarsos-empty" class="text-xs text-slate-500 italic">No registrada</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- PIE MODAL -->
 
       <!-- SECCIÓN 3: INFORMES & EXPORTACIÓN CNZ -->
       <section id="sec-informes" class="hidden space-y-6">
