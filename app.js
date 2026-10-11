@@ -194,14 +194,57 @@ async function loadAllData() {
 }
 
 // ============================================================================
-// 4. REGISTRO Y GUARDADO DE DATOS (AJUSTES FINOS: SUBIDA FOTOS + REGA UPSERT)
+// 4. REGISTRO Y GUARDADO DE DATOS (CÁMARA DIRECTA + VISTA PREVIA + REGA UPSERT)
 // ============================================================================
-async function subirImagenStorage(fileInputId, ringNumber, tipo) {
-  const fileInput = document.getElementById(fileInputId);
-  if (!fileInput || !fileInput.files || fileInput.files.length === 0) return null;
-  
-  const file = fileInput.files[0];
-  const fileExt = file.name.split('.').pop();
+
+// Objeto global para almacenar los archivos de fotos capturados o seleccionados
+let fotosSeleccionadas = {
+  foto_lateral: null,
+  foto_cabeza: null,
+  foto_tarsos: null
+};
+
+// Genera la vista previa en pantalla de la foto tomada con la cámara o seleccionada
+window.procesarVistaPrevia = function(tipo, inputElement) {
+  if (!inputElement.files || inputElement.files.length === 0) return;
+
+  const file = inputElement.files[0];
+  fotosSeleccionadas[tipo] = file;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const imgElement = document.getElementById(`${tipo}_img`);
+    const containerElement = document.getElementById(`${tipo}_preview_container`);
+    const controlsElement = document.getElementById(`${tipo}_controls`);
+
+    if (imgElement) imgElement.src = e.target.result;
+    if (containerElement) containerElement.classList.remove('hidden');
+    if (controlsElement) controlsElement.classList.add('hidden');
+  };
+  reader.readAsDataURL(file);
+};
+
+// Limpia y descarta la foto seleccionada para permitir una nueva toma
+window.descartarFoto = function(tipo) {
+  fotosSeleccionadas[tipo] = null;
+
+  const inputCam = document.getElementById(`${tipo}_cam`);
+  const inputFile = document.getElementById(`${tipo}_file`);
+  const containerElement = document.getElementById(`${tipo}_preview_container`);
+  const controlsElement = document.getElementById(`${tipo}_controls`);
+
+  if (inputCam) inputCam.value = '';
+  if (inputFile) inputFile.value = '';
+  if (containerElement) containerElement.classList.add('hidden');
+  if (controlsElement) controlsElement.classList.remove('hidden');
+};
+
+// Sube el archivo procesado a Supabase Storage
+async function subirImagenStorage(tipo, ringNumber) {
+  const file = fotosSeleccionadas[tipo];
+  if (!file) return null;
+
+  const fileExt = file.name ? file.name.split('.').pop() : 'jpg';
   const fileName = `${ringNumber}_${tipo}_${Date.now()}.${fileExt}`;
   const filePath = `ejemplares/${fileName}`;
 
@@ -243,7 +286,7 @@ async function guardarEjemplar(event) {
     return;
   }
 
-  // Ajuste Fino 2: Upsert paralelo en la tabla de breeders/explotación REGA
+  // Sincronización en la tabla de breeders / Explotación REGA
   if (navigator.onLine && supabaseClient && criadorRega) {
     const breederData = {
       code: criadorSocio || 'ESGA025',
@@ -255,15 +298,15 @@ async function guardarEjemplar(event) {
     await supabaseClient.from('breeders').upsert([breederData]);
   }
 
-  // Ajuste Fino 1: Subida de fotos obligatorias CNZ
+  // Subida de las 3 fotografías obligatorias procesando la cámara/galería
   let fotoLateralUrl = null;
   let fotoCabezaUrl = null;
   let fotoTarsosUrl = null;
 
   if (navigator.onLine && supabaseClient) {
-    fotoLateralUrl = await subirImagenStorage('foto_lateral', ring, 'lateral');
-    fotoCabezaUrl = await subirImagenStorage('foto_cabeza', ring, 'cabeza');
-    fotoTarsosUrl = await subirImagenStorage('foto_tarsos', ring, 'tarsos');
+    fotoLateralUrl = await subirImagenStorage('foto_lateral', ring);
+    fotoCabezaUrl = await subirImagenStorage('foto_cabeza', ring);
+    fotoTarsosUrl = await subirImagenStorage('foto_tarsos', ring);
   }
 
   const newAnimal = {
@@ -308,6 +351,9 @@ async function guardarEjemplar(event) {
 function limpiarFormulario() {
   const form = document.getElementById('form-ejemplar');
   if (form) form.reset();
+  descartarFoto('foto_lateral');
+  descartarFoto('foto_cabeza');
+  descartarFoto('foto_tarsos');
 }
 
 async function markLoss(ringNumber) {
@@ -333,7 +379,6 @@ async function markLoss(ringNumber) {
   localStorage.setItem('alacantin_losses', JSON.stringify(state.losses));
   renderAll();
 }
-
 // ============================================================================
 // 5. CÁLCULOS GENEALÓGICOS, TRAMOS DE EDAD Y CONSANGUINIDAD (WRIGHT)
 // ============================================================================
