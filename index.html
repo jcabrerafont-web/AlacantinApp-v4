@@ -163,37 +163,106 @@
               </select>
             </div>
 
-            <!-- BLOQUE 3: FOTOGRAFÍAS OBLIGATORIAS (CNZ ART. 3.1.c) -->
-            <div class="md:col-span-3 bg-slate-900/60 p-4 rounded-lg border border-slate-700/80 my-2">
-              <h3 class="text-sm font-semibold text-amber-400 mb-3 flex items-center gap-2">📸 Documentación Fotográfica Obligatoria (CNZ Art. 3.1.c)</h3>
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label class="block text-[11px] text-slate-400 mb-1">Vista Lateral Completa *</label>
-                  <input type="file" id="foto_lateral" accept="image/*" class="w-full text-xs text-slate-400 bg-slate-800 rounded p-2 border border-slate-700">
-                </div>
-                <div>
-                  <label class="block text-[11px] text-slate-400 mb-1">Detalle Cabeza / Cresta / Orejilla *</label>
-                  <input type="file" id="foto_cabeza" accept="image/*" class="w-full text-xs text-slate-400 bg-slate-800 rounded p-2 border border-slate-700">
-                </div>
-                <div>
-                  <label class="block text-[11px] text-slate-400 mb-1">Detalle Patas / Tarsos *</label>
-                  <input type="file" id="foto_tarsos" accept="image/*" class="w-full text-xs text-slate-400 bg-slate-800 rounded p-2 border border-slate-700">
-                </div>
-              </div>
-            </div>
+          <!-- BLOQUE 3: FOTOGRAFÍAS OBLIGATORIAS (CNZ ART. 3.1.c) CON CÁMARA DIRECTA Y VISTA PREVIA -->
+<div class="md:col-span-3 bg-slate-900/60 p-4 rounded-lg border border-slate-700/80 my-2 space-y-4">
+  <div class="flex items-center justify-between border-b border-slate-700/60 pb-2">
+    <h3 class="text-sm font-semibold text-amber-400 flex items-center gap-2">
+      📸 Documentación Fotográfica Obligatoria (CNZ Art. 3.1.c)
+    </h3>
+    <span class="text-[11px] text-slate-400">Captura directa desde móvil o subida de archivo</span>
+  </div>
 
-            <div class="md:col-span-3">
-              <label class="block text-xs text-slate-400 mb-1">Observaciones Morfológicas / Calificación</label>
-              <textarea id="observaciones" rows="2" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-slate-100 focus:border-amber-400 focus:outline-none" placeholder="Rasgos particulares, valoración morfológica..."></textarea>
-            </div>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 
-            <div class="md:col-span-3 flex justify-end gap-3 pt-2">
-              <button type="button" onclick="limpiarFormulario()" class="px-5 py-3 rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-700 touch-target">Limpiar</button>
-              <button type="submit" class="px-6 py-3 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold touch-target">Guardar en Libro Genealógico</button>
-            </div>
-          </form>
+    <!-- 1. VISTA LATERAL COMPLETA -->
+    <div class="bg-slate-800/80 p-3 rounded-lg border border-slate-700 space-y-2">
+      <label class="block text-xs font-medium text-slate-200">1. Vista Lateral Completa *</label>
+      
+      <!-- Inputs ocultos para archivo / cámara -->
+      <input type="file" id="foto_lateral_file" accept="image/*" class="hidden" onchange="procesarVistaPrevia('foto_lateral', this)">
+      <input type="file" id="foto_lateral_cam" accept="image/*" capture="environment" class="hidden" onchange="procesarVistaPrevia('foto_lateral', this)">
+
+      <!-- Botones de selección -->
+      <div id="foto_lateral_controls" class="flex gap-2">
+        <button type="button" onclick="document.getElementById('foto_lateral_cam').click()" class="flex-1 py-2 px-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/40 rounded text-xs font-semibold flex items-center justify-center gap-1 touch-target">
+          📷 Cámara
+        </button>
+        <button type="button" onclick="document.getElementById('foto_lateral_file').click()" class="flex-1 py-2 px-2 bg-slate-700 hover:bg-slate-600 text-slate-300 border border-slate-600 rounded text-xs flex items-center justify-center gap-1 touch-target">
+          📁 Galería
+        </button>
+      </div>
+
+      <!-- Contenedor de Vista Previa y Descarte -->
+      <div id="foto_lateral_preview_container" class="hidden space-y-2 pt-1">
+        <div class="relative w-full h-36 bg-slate-900 rounded-lg overflow-hidden border border-amber-500/50">
+          <img id="foto_lateral_img" src="" alt="Vista Previa Lateral" class="w-full h-full object-cover">
         </div>
-      </section>
+        <button type="button" onclick="descartarFoto('foto_lateral')" class="w-full py-1.5 bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/40 rounded text-xs font-medium flex items-center justify-center gap-1">
+          🗑️ Descartar / Repetir
+        </button>
+      </div>
+    </div>
+
+    <!-- 2. DETALLE CABEZA / CRESTA / OREJILLA -->
+    <div class="bg-slate-800/80 p-3 rounded-lg border border-slate-700 space-y-2">
+      <label class="block text-xs font-medium text-slate-200">2. Cabeza / Cresta / Orejilla *</label>
+
+      <!-- Inputs ocultos para archivo / cámara -->
+      <input type="file" id="foto_cabeza_file" accept="image/*" class="hidden" onchange="procesarVistaPrevia('foto_cabeza', this)">
+      <input type="file" id="foto_cabeza_cam" accept="image/*" capture="environment" class="hidden" onchange="procesarVistaPrevia('foto_cabeza', this)">
+
+      <!-- Botones de selección -->
+      <div id="foto_cabeza_controls" class="flex gap-2">
+        <button type="button" onclick="document.getElementById('foto_cabeza_cam').click()" class="flex-1 py-2 px-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/40 rounded text-xs font-semibold flex items-center justify-center gap-1 touch-target">
+          📷 Cámara
+        </button>
+        <button type="button" onclick="document.getElementById('foto_cabeza_file').click()" class="flex-1 py-2 px-2 bg-slate-700 hover:bg-slate-600 text-slate-300 border border-slate-600 rounded text-xs flex items-center justify-center gap-1 touch-target">
+          📁 Galería
+        </button>
+      </div>
+
+      <!-- Contenedor de Vista Previa y Descarte -->
+      <div id="foto_cabeza_preview_container" class="hidden space-y-2 pt-1">
+        <div class="relative w-full h-36 bg-slate-900 rounded-lg overflow-hidden border border-amber-500/50">
+          <img id="foto_cabeza_img" src="" alt="Vista Previa Cabeza" class="w-full h-full object-cover">
+        </div>
+        <button type="button" onclick="descartarFoto('foto_cabeza')" class="w-full py-1.5 bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/40 rounded text-xs font-medium flex items-center justify-center gap-1">
+          🗑️ Descartar / Repetir
+        </button>
+      </div>
+    </div>
+
+    <!-- 3. DETALLE PATAS / TARSOS -->
+    <div class="bg-slate-800/80 p-3 rounded-lg border border-slate-700 space-y-2">
+      <label class="block text-xs font-medium text-slate-200">3. Patas / Tarsos *</label>
+
+      <!-- Inputs ocultos para archivo / cámara -->
+      <input type="file" id="foto_tarsos_file" accept="image/*" class="hidden" onchange="procesarVistaPrevia('foto_tarsos', this)">
+      <input type="file" id="foto_tarsos_cam" accept="image/*" capture="environment" class="hidden" onchange="procesarVistaPrevia('foto_tarsos', this)">
+
+      <!-- Botones de selección -->
+      <div id="foto_tarsos_controls" class="flex gap-2">
+        <button type="button" onclick="document.getElementById('foto_tarsos_cam').click()" class="flex-1 py-2 px-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/40 rounded text-xs font-semibold flex items-center justify-center gap-1 touch-target">
+          📷 Cámara
+        </button>
+        <button type="button" onclick="document.getElementById('foto_tarsos_file').click()" class="flex-1 py-2 px-2 bg-slate-700 hover:bg-slate-600 text-slate-300 border border-slate-600 rounded text-xs flex items-center justify-center gap-1 touch-target">
+          📁 Galería
+        </button>
+      </div>
+
+      <!-- Contenedor de Vista Previa y Descarte -->
+      <div id="foto_tarsos_preview_container" class="hidden space-y-2 pt-1">
+        <div class="relative w-full h-36 bg-slate-900 rounded-lg overflow-hidden border border-amber-500/50">
+          <img id="foto_tarsos_img" src="" alt="Vista Previa Tarsos" class="w-full h-full object-cover">
+        </div>
+        <button type="button" onclick="descartarFoto('foto_tarsos')" class="w-full py-1.5 bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/40 rounded text-xs font-medium flex items-center justify-center gap-1">
+          🗑️ Descartar / Repetir
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
 
       <!-- SECCIÓN 2: TABLA DE CENSO GENEALÓGICO -->
       <section id="sec-censo" class="hidden space-y-4">
