@@ -471,7 +471,7 @@ window.exportarMatrizPedigriCSV = function() {
 };
 
 // ============================================================================
-// 7. RENDERIZADO DE TABLAS, VISTAS E INFORMES CNZ
+// 7. RENDERIZADO DE TABLAS, VISTAS E INFORMES CNZ (CON VISOR DE FOTOS)
 // ============================================================================
 function renderAll() {
   renderAnimalsTable();
@@ -484,19 +484,28 @@ function renderAnimalsTable() {
 
   const activeAnimals = state.animals.filter(a => a.status !== 'loss');
 
-  tbody.innerHTML = activeAnimals.map(a => `
-    <tr class="hover:bg-slate-700/50">
-      <td class="p-4 font-bold text-amber-400">${a.ring_number}</td>
-      <td class="p-4">${a.sex === 'M' ? '♂ Macho' : '♀ Hembra'}</td>
-      <td class="p-4">${a.variety || 'Milflores'}</td>
-      <td class="p-4">${calcularTramoEdad(a.birth_date)}</td>
-      <td class="p-4">${a.section || 'Nacimientos'}</td>
-      <td class="p-4 flex gap-2">
-        <button onclick="markLoss('${a.ring_number}')" class="px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white font-bold rounded text-xs">Baja</button>
-        <button onclick="generatePedigreePDF('${a.ring_number}')" class="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded text-xs">Pedigrí</button>
-      </td>
-    </tr>
-  `).join('');
+  tbody.innerHTML = activeAnimals.map(a => {
+    const tieneFotos = a.foto_lateral || a.foto_cabeza || a.foto_tarsos;
+    return `
+      <tr class="hover:bg-slate-700/50">
+        <td class="p-4 font-bold text-amber-400">${a.ring_number}</td>
+        <td class="p-4">${a.sex === 'M' ? '♂ Macho' : '♀ Hembra'}</td>
+        <td class="p-4">${a.variety || 'Milflores'}</td>
+        <td class="p-4">${calcularTramoEdad(a.birth_date)}</td>
+        <td class="p-4">${a.section || 'Nacimientos'}</td>
+        <td class="p-4">
+          <button onclick="abrirModalFotos('${a.ring_number}')" 
+                  class="px-2.5 py-1 ${tieneFotos ? 'bg-indigo-600 hover:bg-indigo-500 text-white' : 'bg-slate-700 text-slate-400'} font-semibold rounded text-xs flex items-center gap-1 transition-colors">
+            📸 ${tieneFotos ? 'Ver Fotos' : 'Sin Fotos'}
+          </button>
+        </td>
+        <td class="p-4 flex gap-2">
+          <button onclick="markLoss('${a.ring_number}')" class="px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white font-bold rounded text-xs">Baja</button>
+          <button onclick="generatePedigreePDF('${a.ring_number}')" class="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded text-xs">Pedigrí</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
 }
 
 function populateDropdowns() {
@@ -516,6 +525,51 @@ function populateDropdowns() {
       females.map(f => `<option value="${f.ring_number}">${f.ring_number} (${f.variety || 'Milflores'})</option>`).join('');
   }
 }
+
+// ============================================================================
+// FUNCIONES DEL VISOR MODAL DE FOTOS (CNZ ART. 3.1.c)
+// ============================================================================
+window.abrirModalFotos = function(ringNumber) {
+  const animal = state.animals.find(a => a.ring_number === ringNumber);
+  if (!animal) return;
+
+  const modal = document.getElementById('modal-fotos');
+  const titulo = document.getElementById('modal-fotos-titulo');
+  const subtitulo = document.getElementById('modal-fotos-subtitulo');
+
+  if (titulo) titulo.textContent = `Documentación Fotográfica - Anilla ${animal.ring_number}`;
+  if (subtitulo) subtitulo.textContent = `Variedad: ${animal.variety || 'Milflores'} | Sexo: ${animal.sex === 'M' ? 'Macho' : 'Hembra'} | Tramo: ${calcularTramoEdad(animal.birth_date)}`;
+
+  // Cargar imagen Lateral
+  cargarFotoEnModal('modal-foto-lateral', 'modal-foto-lateral-empty', animal.foto_lateral);
+  // Cargar imagen Cabeza
+  cargarFotoEnModal('modal-foto-cabeza', 'modal-foto-cabeza-empty', animal.foto_cabeza);
+  // Cargar imagen Tarsos
+  cargarFotoEnModal('modal-foto-tarsos', 'modal-foto-tarsos-empty', animal.foto_tarsos);
+
+  if (modal) modal.classList.remove('hidden');
+};
+
+function cargarFotoEnModal(imgId, emptyId, url) {
+  const img = document.getElementById(imgId);
+  const empty = document.getElementById(emptyId);
+
+  if (url) {
+    if (img) {
+      img.src = url;
+      img.classList.remove('hidden');
+    }
+    if (empty) empty.classList.add('hidden');
+  } else {
+    if (img) img.classList.add('hidden');
+    if (empty) empty.classList.remove('hidden');
+  }
+}
+
+window.cerrarModalFotos = function() {
+  const modal = document.getElementById('modal-fotos');
+  if (modal) modal.classList.add('hidden');
+};
 
 // ============================================================================
 // 8. INFORMES TÉCNICOS CNZ Y CERTIFICADOS PDF
