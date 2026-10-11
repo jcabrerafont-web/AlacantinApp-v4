@@ -101,9 +101,9 @@
             </div>
           </div>
 
-          <!-- BLOQUE 2: FICHA INDIVIDUAL DEL EJEMPLAR (CON VALIDACIÓN ZOOTÉCNICA EN TIEMPO REAL) -->
+        <!-- BLOQUE 2: FICHA INDIVIDUAL DEL EJEMPLAR (CON VALIDACIÓN ZOOTÉCNICA EN TIEMPO REAL) -->
           <h2 class="text-lg font-semibold text-amber-400 mb-4 flex items-center gap-2">🐓 Ficha Individual del Ave (Libro Genealógico)</h2>
-          <form id="form-ejemplar" class="grid grid-cols-1 md:grid-cols-3 gap-4" onsubmit="guardarEjemplar(event)">
+          <form id="form-ejemplar" novalidate class="grid grid-cols-1 md:grid-cols-3 gap-4" onsubmit="guardarEjemplar(event)">
             <div>
               <label class="block text-xs text-slate-400 mb-1">Código de Anilla Inamovible *</label>
               <input type="text" id="anilla" required oninput="validarFormatoAnilla()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-slate-100 focus:border-amber-400 focus:outline-none uppercase" placeholder="E 0000">
@@ -138,6 +138,7 @@
             <div>
               <label class="block text-xs text-slate-400 mb-1">Peso Registrado (gramos)</label>
               <input type="number" id="peso" value="3500" oninput="validarPesoZootecnico()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-slate-100 focus:border-amber-400 focus:outline-none">
+            </div>
               <!-- Indicador morfológico de estándar de peso -->
               <div id="alerta-peso" class="mt-1 text-[11px] font-medium flex items-center gap-1"></div>
             </div>
