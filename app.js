@@ -163,6 +163,11 @@ window.switchTab = function(tabId) {
     }
   });
 
+  // Asegurar carga local si el estado está vacío y disparar renderizados
+  if ((!state.animals || state.animals.length === 0) && typeof loadAllData === 'function') {
+    state.animals = JSON.parse(localStorage.getItem('alacantin_animals') || '[]');
+  }
+
   // Disparar renderizados específicos según la pestaña activa
   if (tabId === 'censo' || tabId === 'registro') {
     renderAnimalsTable();
