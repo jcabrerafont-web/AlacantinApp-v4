@@ -129,7 +129,7 @@ async function logout() {
 }
 
 // ============================================================================
-// 2. NAVEGACIÓN POR PESTAÑAS (ACTUALIZADA PARA RENDERIZAR VISTAS)
+// 2. NAVEGACIÓN POR PESTAÑAS
 // ============================================================================
 window.switchTab = function(tabId) {
   const sections = ['registro', 'censo', 'informes', 'estandar', 'gestion'];
@@ -163,19 +163,8 @@ window.switchTab = function(tabId) {
     }
   });
 
-  // Asegurar carga local si el estado está vacío y disparar renderizados
-  if ((!state.animals || state.animals.length === 0) && typeof loadAllData === 'function') {
-    state.animals = JSON.parse(localStorage.getItem('alacantin_animals') || '[]');
-  }
-
-  // Disparar renderizados específicos según la pestaña activa
-  if (tabId === 'censo' || tabId === 'registro') {
-    renderAnimalsTable();
-  } else if (tabId === 'informes') {
-    if (typeof filtrarInformesCNZ === 'function') {
-      filtrarInformesCNZ();
-    }
-  }
+  // Renderizar contenido al cambiar de pestaña
+  renderAll();
 };
 
 // ============================================================================
