@@ -306,21 +306,27 @@ async function guardarEjemplar(event) {
       location: `${criadorMunicipio} (${criadorProvincia})`,
       gps: criadorGps
     };
-    await supabaseClient.from('breeders').upsert([breederData]);
+    try {
+      await supabaseClient.from('breeders').upsert([breederData]);
+    } catch (err) {
+      console.error('Error al sincronizar criador:', err.message);
+    }
   }
 
-  // 2. Procesamiento de Fotografías (Subida a Supabase si Online / Guardado Base64 si Offline)
+  // 2. Procesamiento de Fotografías
   let fotoLateralUrl = null;
   let fotoCabezaUrl = null;
   let fotoTarsosUrl = null;
 
   if (navigator.onLine && supabaseClient) {
-    // Modo ONLINE: Subida directa a Supabase Storage
-    fotoLateralUrl = await subirImagenStorage('foto_lateral', ring);
-    fotoCabezaUrl = await subirImagenStorage('foto_cabeza', ring);
-    fotoTarsosUrl = await subirImagenStorage('foto_tarsos', ring);
+    try {
+      fotoLateralUrl = await subirImagenStorage('foto_lateral', ring);
+      fotoCabezaUrl = await subirImagenStorage('foto_cabeza', ring);
+      fotoTarsosUrl = await subirImagenStorage('foto_tarsos', ring);
+    } catch (err) {
+      console.error('Error al subir las fotografías:', err.message);
+    }
   } else {
-    // Modo OFFLINE (Gallinero sin cobertura): Convertir a Base64 para visualización e inspección local
     const convertirABase64 = (file) => new Promise((resolve) => {
       if (!file) return resolve(null);
       const reader = new FileReader();
@@ -352,7 +358,7 @@ async function guardarEjemplar(event) {
     status: 'active'
   };
 
-  // 4. Guardado en Supabase o Encolado Local
+  // 4. Guardado en Supabase
   if (navigator.onLine && supabaseClient) {
     const { error } = await supabaseClient.from('animals').upsert([newAnimal]);
     if (error) {
@@ -360,94 +366,12 @@ async function guardarEjemplar(event) {
       return;
     }
   } else {
-    // Guardar en cola de sincronización pendiente offline
     const colaOffline = JSON.parse(localStorage.getItem('alacantin_cola_offline') || '[]');
     colaOffline.push({ animalData: newAnimal, timestamp: Date.now() });
     localStorage.setItem('alacantin_cola_offline', JSON.stringify(colaOffline));
   }
 
-  // 5. Actualizar estado local (Reactividad e Interfaz)
-  const index = state.animals.findIndex(a => a.ring_number === ring);
-  if (index >= 0) {
-    state.animals[index] = newAnimal;
-  } else {
-    state.animals.unshift(newAnimal);
-  }
-
-  localStorage.setItem('alacantin_animals', JSON.stringify(state.animals));
-
-  // 6. Mensaje final según cobertura
-  if (navigator.onLine) {
-    alert('✅ Ejemplar y documentación fotográfica sincronizados correctamente en Supabase.');
-  } else {
-    alert('📡 Guardado localmente en modo Offline. Las fotografías se subirán a la nube automáticamente cuando recuperes la cobertura.');
-  }
-
-  limpiarFormulario();
-  renderAll();
-}
-
- // Sincronización en la tabla de breeders / Explotación REGA
-  if (navigator.onLine && supabaseClient && criadorRega) {
-    const breederData = {
-      code: criadorSocio || 'ESGA025',
-      full_name: criadorNombre,
-      rega: criadorRega,
-      location: `${criadorMunicipio} (${criadorProvincia})`,
-      gps: criadorGps
-    };
-
-    (async () => {
-      try {
-        const { data, error } = await supabaseClient.from('breeders').upsert([breederData]);
-        if (error) throw error;
-        console.log('Datos del criador sincronizados en breeders:', data);
-      } catch (err) {
-        console.error('Error al sincronizar datos del criador:', err.message);
-      }
-    })();
-  }
- // Subida de las 3 fotografías obligatorias procesando la cámara/galería
-  let fotoLateralUrl = null;
-  let fotoCabezaUrl = null;
-  let fotoTarsosUrl = null;
-
-  if (navigator.onLine && supabaseClient) {
-    try {
-      fotoLateralUrl = await subirImagenStorage('foto_lateral', ring);
-      fotoCabezaUrl = await subirImagenStorage('foto_cabeza', ring);
-      fotoTarsosUrl = await subirImagenStorage('foto_tarsos', ring);
-    } catch (err) {
-      console.error('Error al subir las fotografías:', err.message);
-    }
-  }
-
-  const newAnimal = {
-    ring_number: ring,
-    variety: variety || 'Milflores',
-    sex: sex || 'M',
-    birth_date: birthDate || null,
-    weight: weight || null,
-    section: section || 'Registro Nacimientos',
-    sire_ring: sire || null,
-    dam_ring: dam || null,
-    germoplasm: germoplasm || 'No',
-    notes: notes || '',
-    breeder_code: criadorSocio || null,
-    foto_lateral: fotoLateralUrl,
-    foto_cabeza: fotoCabezaUrl,
-    foto_tarsos: fotoTarsosUrl,
-    status: 'active'
-  };
-
-  if (navigator.onLine && supabaseClient) {
-    const { error } = await supabaseClient.from('animals').upsert([newAnimal]);
-    if (error) {
-      alert('Error al guardar en Supabase: ' + error.message);
-      return;
-    }
-  }
-
+  // 5. Actualizar estado local
   const index = state.animals.findIndex(a => a.ring_number === ring);
   if (index >= 0) {
     state.animals[index] = newAnimal;
@@ -457,6 +381,7 @@ async function guardarEjemplar(event) {
 
   localStorage.setItem('alacantin_animals', JSON.stringify(state.animals));
   alert('Ejemplar y documentación fotográfica guardados correctamente en v4.');
+
   limpiarFormulario();
   renderAll();
 }
@@ -492,6 +417,7 @@ async function markLoss(ringNumber) {
   localStorage.setItem('alacantin_losses', JSON.stringify(state.losses));
   renderAll();
 }
+
 // ============================================================================
 // 5. CÁLCULOS GENEALÓGICOS, TRAMOS DE EDAD Y CONSANGUINIDAD (WRIGHT)
 // ============================================================================
@@ -653,11 +579,8 @@ window.abrirModalFotos = function(ringNumber) {
   if (titulo) titulo.textContent = `Documentación Fotográfica - Anilla ${animal.ring_number}`;
   if (subtitulo) subtitulo.textContent = `Variedad: ${animal.variety || 'Milflores'} | Sexo: ${animal.sex === 'M' ? 'Macho' : 'Hembra'} | Tramo: ${calcularTramoEdad(animal.birth_date)}`;
 
-  // Cargar imagen Lateral
   cargarFotoEnModal('modal-foto-lateral', 'modal-foto-lateral-empty', animal.foto_lateral);
-  // Cargar imagen Cabeza
   cargarFotoEnModal('modal-foto-cabeza', 'modal-foto-cabeza-empty', animal.foto_cabeza);
-  // Cargar imagen Tarsos
   cargarFotoEnModal('modal-foto-tarsos', 'modal-foto-tarsos-empty', animal.foto_tarsos);
 
   if (modal) modal.classList.remove('hidden');
@@ -685,7 +608,7 @@ window.cerrarModalFotos = function() {
 };
 
 // ============================================================================
-// 8. INFORMES TÉCNICOS CNZ Y CERTIFICADOS PDF (CON INCORPORACIÓN DE IMÁGENES)
+// 8. INFORMES TÉCNICOS CNZ Y CERTIFICADOS PDF
 // ============================================================================
 window.filtrarInformesCNZ = function() {
   const resultado = document.getElementById('resultado-informe');
@@ -699,7 +622,6 @@ window.filtrarInformesCNZ = function() {
   const machos = activos.filter(a => a.sex === 'M').length;
   const hembras = activos.filter(a => a.sex === 'H').length;
 
-  // Desglose por Variedades de Pluma (Art. 3.3 CNZ)
   const variedadesCount = {};
   activos.forEach(a => {
     const v = a.variety || 'Milflores';
@@ -715,7 +637,6 @@ window.filtrarInformesCNZ = function() {
       <h3 class="font-bold text-amber-400 text-lg border-b border-slate-700 pb-2">📋 Expediente Oficial - Catálogo de Razas (CNZ)</h3>
       
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-        <!-- Desglose por Sexo -->
         <div class="bg-slate-900/60 p-4 rounded-lg border border-slate-700">
           <p class="font-semibold text-amber-400 mb-2">Desglose por Sexo (Art. 3.1.f)</p>
           <p>Machos (1.0): <strong>${machos}</strong></p>
@@ -723,7 +644,6 @@ window.filtrarInformesCNZ = function() {
           <p class="mt-2 text-xs text-slate-400">Ratio Reproductor: ${(machos > 0 ? (hembras / machos).toFixed(1) : 0)} H/M</p>
         </div>
 
-        <!-- Desglose por Edad -->
         <div class="bg-slate-900/60 p-4 rounded-lg border border-slate-700">
           <p class="font-semibold text-amber-400 mb-2">Desglose por Tramos de Edad</p>
           <p>Pollitos (< 6m): <strong>${pollitos}</strong></p>
@@ -731,7 +651,6 @@ window.filtrarInformesCNZ = function() {
           <p>Adultos Reproductores (> 1a): <strong>${adultos}</strong></p>
         </div>
 
-        <!-- Desglose por Variedades -->
         <div class="bg-slate-900/60 p-4 rounded-lg border border-slate-700">
           <p class="font-semibold text-amber-400 mb-2">Variedades de Pluma (Art. 3.3)</p>
           <ul class="text-xs space-y-1 text-slate-300">
@@ -762,7 +681,6 @@ window.generatePedigreePDF = async function(ringNumber) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
 
-  // Cabecera Oficial
   doc.setFillColor(30, 41, 59);
   doc.rect(0, 0, 210, 35, 'F');
 
@@ -774,7 +692,6 @@ window.generatePedigreePDF = async function(ringNumber) {
   doc.setTextColor(203, 213, 225);
   doc.text('Libro Genealógico Oficial ESGA025 - Certificado de Pedigrí (v4)', 14, 26);
 
-  // Tabla Principales Datos
   doc.autoTable({
     startY: 42,
     head: [['Dato Oficial', 'Detalle del Ejemplar']],
@@ -793,19 +710,6 @@ window.generatePedigreePDF = async function(ringNumber) {
     headStyles: { fillColor: [217, 119, 6] }
   });
 
-  // Si existen imágenes, añadir anexo fotográfico en el PDF
-  let finalY = doc.lastAutoTable.finalY + 10;
-  if (animal.foto_lateral || animal.foto_cabeza || animal.foto_tarsos) {
-    doc.setFontSize(11);
-    doc.setTextColor(30, 41, 59);
-    doc.text('Documentación Fotográfica de Inspección Zootécnica:', 14, finalY);
-    
-    // Anexo de aviso
-    doc.setFontSize(9);
-    doc.setTextColor(100);
-    doc.text('Fotografías almacenadas y verificadas en el repositorio digital del Libro ESGA025.', 14, finalY + 6);
-  }
-
   doc.save(`Pedigri_ESGA025_${animal.ring_number}.pdf`);
 };
 
@@ -823,6 +727,7 @@ window.obtenerUbicacionGPS = function() {
     alert('La geolocalización no es compatible en este navegador.');
   }
 };
+
 // ============================================================================
 // 9. INICIALIZACIÓN GLOBAL V4
 // ============================================================================
