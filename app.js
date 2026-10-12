@@ -129,7 +129,7 @@ async function logout() {
 }
 
 // ============================================================================
-// 2. NAVEGACIÓN POR PESTAÑAS
+// 2. NAVEGACIÓN POR PESTAÑAS (ACTUALIZADA PARA RENDERIZAR VISTAS)
 // ============================================================================
 window.switchTab = function(tabId) {
   const sections = ['registro', 'censo', 'informes', 'estandar', 'gestion'];
@@ -162,6 +162,15 @@ window.switchTab = function(tabId) {
       }
     }
   });
+
+  // Disparar renderizados específicos según la pestaña activa
+  if (tabId === 'censo' || tabId === 'registro') {
+    renderAnimalsTable();
+  } else if (tabId === 'informes') {
+    if (typeof filtrarInformesCNZ === 'function') {
+      filtrarInformesCNZ();
+    }
+  }
 };
 
 // ============================================================================
